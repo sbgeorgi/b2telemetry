@@ -29,7 +29,7 @@
         }
 
         /* HEADER */
-        .header-group { text-align: center; margin-bottom: 25px; max-width: 900px; width: 100%; }
+        .header-group { text-align: center; margin-bottom: 25px; max-width: 900px; width: 100%; flex-shrink: 0; }
         
         .section-heading { 
             font-family: 'Space Grotesk', sans-serif; 
@@ -72,7 +72,7 @@
             max-width: 850px;
         }
 
-        /* --- COMPACT DISPLAY CONTAINER --- */
+        /* --- DISPLAY CONTAINER --- */
         .system-display-container {
             display: grid;
             grid-template-columns: 1.2fr 0.8fr;
@@ -113,6 +113,7 @@
             gap: 15px; 
             position: relative;
             background: #13161c;
+            overflow-y: auto; /* Internal scroll for desktop if needed */
         }
 
         /* LOADING OVERLAY */
@@ -207,7 +208,7 @@
         .chart-wrapper {
             flex-grow: 1; position: relative; 
             width: 100%; background: rgba(0,0,0,0.3); 
-            border-radius: 12px; padding: 10px 10px 0 10px; /* Adjusted padding */
+            border-radius: 12px; padding: 10px 10px 0 10px; 
             min-height: 0;
         }
 
@@ -220,11 +221,57 @@
         }
         .btn-primary:hover { background: #e0e0e0; transform: translateY(-1px); }
 
-        @media(max-width: 900px) {
-            .system-display-container { grid-template-columns: 1fr; height: auto; }
-            .system-visual { height: 250px; }
-            .system-data-panel { height: auto; }
-            .chart-wrapper { min-height: 250px; }
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 960px) {
+            body { 
+                height: auto; 
+                overflow-y: auto; /* Enable scroll on mobile */
+            }
+            .systems-section { 
+                height: auto; 
+                min-height: 0; 
+                padding: 20px 15px; 
+                display: block; /* Remove flex centering */
+            }
+            
+            .header-group { 
+                margin-top: 20px; 
+                margin-bottom: 20px;
+            }
+            .system-blurb { 
+                min-height: 0; 
+                font-size: 13px;
+            }
+
+            .system-display-container {
+                display: flex;
+                flex-direction: column;
+                height: auto; /* Allow content to grow */
+                max-width: 100%;
+                margin-bottom: 40px;
+            }
+
+            /* Image gets fixed height on top */
+            .system-visual {
+                height: 250px; 
+                flex-shrink: 0;
+            }
+
+            /* Panel flows naturally */
+            .system-data-panel {
+                overflow: visible; 
+                height: auto;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            /* Chart needs explicit height in flex column */
+            .chart-wrapper {
+                min-height: 250px; 
+            }
+
+            .system-controls { gap: 8px; }
+            .sys-btn { padding: 8px 16px; font-size: 10px; }
         }
     </style>
 </head>
@@ -370,6 +417,7 @@
         // --- DATA ENGINE ---
         async function fetchSensorData(id) {
             try {
+                // Fetch through CORS Proxy
                 const encodedUrl = encodeURIComponent(`${TARGET_URL}${id}`);
                 const response = await fetch(`${PROXY_URL}${encodedUrl}`);
                 const text = await response.text();
@@ -428,7 +476,7 @@
             overlay.classList.add('active');
 
             document.getElementById('system-title').textContent = sys.title;
-            document.getElementById('system-blurb').textContent = sys.blurb;
+            document.getElementById('system-blurb').innerHTML = sys.blurb;
             document.getElementById('system-link').href = sys.link;
             panel.style.setProperty('--system-color', sys.color);
 
@@ -464,7 +512,6 @@
                 
                 let trendHtml = '';
                 if (data && data.history && data.history.length > 0) {
-                    // Trend Context Calculation
                     const now = new Date().getTime();
                     const cutoff = timeRange === '24h' 
                         ? now - (24 * 60 * 60 * 1000) 
@@ -518,11 +565,11 @@
             timeRange = range;
             document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderBubbles(); // Recalculate trends
+            renderBubbles(); 
             updateChart();
         }
 
-        // --- SMOOTHING FUNCTION ---
+        // --- SMOOTHING ---
         function smoothData(data, windowSize) {
             let smoothed = [];
             for (let i = 0; i < data.length; i++) {
@@ -552,9 +599,8 @@
 
             let filteredData = sensorData.history.filter(pt => pt.x > cutoff);
 
-            // APPLY SMOOTHING FOR 7D VIEW
+            // Apply smoothing for 7D view to remove jitter
             if (timeRange === '7d' && filteredData.length > 20) {
-                // Moving average window of ~10 points to remove high frequency jitter
                 filteredData = smoothData(filteredData, 12);
             }
 
