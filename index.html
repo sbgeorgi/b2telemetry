@@ -12,14 +12,14 @@
     
     <style>
         /* --- CORE STYLING --- */
-        body { font-family: 'Inter', sans-serif; background-color: #0b0d12; color: white; margin: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #0b0d12; color: white; margin: 0; height: 100vh; overflow: hidden; }
         * { box-sizing: border-box; }
         
         a { text-decoration: none; color: inherit; }
 
         /* --- DASHBOARD SECTION --- */
         .systems-section { 
-            padding: 60px 20px; 
+            padding: 40px 20px; 
             background-color: #0b0d12; 
             min-height: 100vh; 
             display: flex; 
@@ -29,18 +29,18 @@
         }
 
         /* HEADER */
-        .header-group { text-align: center; margin-bottom: 30px; max-width: 800px; }
+        .header-group { text-align: center; margin-bottom: 25px; max-width: 900px; width: 100%; }
         
         .section-heading { 
             font-family: 'Space Grotesk', sans-serif; 
-            margin: 0 0 20px 0; 
+            margin: 0 0 15px 0; 
             letter-spacing: 3px; 
             font-size: 1.8rem;
             color: #fff;
         }
 
         /* CONTROLS */
-        .system-controls { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .system-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
 
         .sys-btn {
             background: transparent;
@@ -66,17 +66,19 @@
         .system-blurb {
             font-size: 14px;
             color: #9ca3af;
-            line-height: 1.5;
-            min-height: 42px; /* Reserves space to prevent jumping */
+            line-height: 1.6;
+            min-height: 65px;
+            margin: 0 auto;
+            max-width: 850px;
         }
 
         /* --- COMPACT DISPLAY CONTAINER --- */
         .system-display-container {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr; /* Visual gets 60%, Data 40% */
+            grid-template-columns: 1.2fr 0.8fr;
             width: 100%;
-            max-width: 1100px; /* Constrained width */
-            height: 580px;     /* FIXED HEIGHT for compact look */
+            max-width: 1100px;
+            height: 600px;
             background: #13161c;
             border-radius: 20px;
             overflow: hidden;
@@ -137,26 +139,31 @@
         .panel-header { 
             display: flex; 
             justify-content: space-between; 
-            align-items: center; 
+            align-items: flex-start;
             border-bottom: 1px solid rgba(255,255,255,0.1); 
             padding-bottom: 12px;
             margin-bottom: 5px;
         }
+        
+        .header-title-group { display: flex; flex-direction: column; }
+
         .panel-header h3 { 
             font-family: 'Space Grotesk', sans-serif; 
-            font-size: 18px; 
+            font-size: 20px; 
             margin: 0; 
             color: white; 
             letter-spacing: 1px; 
         }
-        
-        /* DATA GRID (BUBBLES) */
-        .data-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 10px; 
-            flex-shrink: 0; 
+
+        .last-updated {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
         }
+        
+        /* DATA GRID */
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-shrink: 0; }
         
         .data-point {
             background: rgba(255,255,255,0.03);
@@ -179,19 +186,17 @@
         .dp-value { font-size: 18px; color: #fff; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
         .dp-unit { font-size: 10px; color: #666; margin-left: 2px; }
 
-        .dp-trend {
-            position: absolute; top: 12px; right: 12px;
-            font-size: 9px; font-weight: 600; font-family: 'Inter', sans-serif;
-        }
+        .trend-container { position: absolute; top: 12px; right: 12px; text-align: right; }
+        .dp-trend { display: block; font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif; }
+        .dp-trend-context { display: block; font-size: 9px; color: #555; margin-top: 2px; font-family: 'Inter', sans-serif; }
+
         .trend-up { color: #4caf50; }
         .trend-down { color: #f44336; }
         .trend-flat { color: #888; }
 
         /* CHART AREA */
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
-        .time-toggle {
-            display: flex; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 2px;
-        }
+        .time-toggle { display: flex; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 2px; }
         .time-btn {
             border: none; background: transparent; color: #aaa; padding: 3px 10px;
             font-size: 9px; font-weight: bold; cursor: pointer; border-radius: 18px;
@@ -200,12 +205,9 @@
         .time-btn.active { background: white; color: black; }
 
         .chart-wrapper {
-            flex-grow: 1; /* Fills remaining space */
-            position: relative; 
-            width: 100%; 
-            background: rgba(0,0,0,0.3); 
-            border-radius: 12px; 
-            padding: 10px;
+            flex-grow: 1; position: relative; 
+            width: 100%; background: rgba(0,0,0,0.3); 
+            border-radius: 12px; padding: 10px 10px 0 10px; /* Adjusted padding */
             min-height: 0;
         }
 
@@ -257,7 +259,10 @@
                 </div>
 
                 <div class="panel-header">
-                    <h3 id="system-title">SYSTEM</h3>
+                    <div class="header-title-group">
+                        <h3 id="system-title">SYSTEM</h3>
+                        <span id="last-update" class="last-updated">UPDATED: --</span>
+                    </div>
                 </div>
 
                 <!-- 4 Bubble Data Grid -->
@@ -265,7 +270,7 @@
 
                 <!-- Chart Controls -->
                 <div class="chart-header">
-                    <span style="font-size:9px; color:#666; letter-spacing:1px; text-transform: uppercase;">Real-time Trend</span>
+                    <span style="font-size:9px; color:#666; letter-spacing:1px; text-transform: uppercase;">Sensor Trend</span>
                     <div class="time-toggle">
                         <button class="time-btn active" onclick="toggleTimeRange('24h', this)">24H</button>
                         <button class="time-btn" onclick="toggleTimeRange('7d', this)">7D</button>
@@ -283,12 +288,10 @@
     </section>
 
     <script>
-        // Use a CORS Proxy to bypass browser security restrictions on GitHub Pages
         const PROXY_URL = 'https://corsproxy.io/?';
         const TARGET_URL = 'https://data.b2.arizona.edu/Bio2Controls/TimeSeries.jsp?tab=';
 
         // --- STATE ---
-        // Changed default from 'ocean' to null so the initial call isn't ignored
         let currentSystem = null; 
         let currentSystemData = []; 
         let selectedSensorIndex = 0; 
@@ -299,7 +302,7 @@
         const systems = {
             ocean: {
                 title: "OCEAN REEF LAB",
-                blurb: "Modeling a Caribbean reef to demonstrate how changes in ocean chemistry significantly affect coral growth and health.",
+                blurb: "This 1-million-gallon mesocosm models a Caribbean reef ecosystem. It is currently undergoing a massive remediation project to support heat-tolerant super corals. Researchers monitor pH, dissolved oxygen, and temperature to understand reef resilience in warming oceans.",
                 image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2021-10/3_Biomes_Ocean_Photo_Option%203.jpg.webp?itok=Em1QPdlr",
                 link: "https://www.biosphere2.org/research/research-initiatives/ocean-reef-lab",
                 color: "#00e5ff",
@@ -312,7 +315,7 @@
             },
             rainforest: {
                 title: "TROPICAL RAIN FOREST",
-                blurb: "Spanning lowland to cloud forest, this biome helps scientists study how tropical plants adapt to rising atmospheric CO₂.",
+                blurb: "A lush neotropical environment enclosed within the glass structure, containing over 90 different species of exotic plants. Current research utilizes this biome to study how tropical ecosystems manage carbon and water cycling under drought stress and rising CO₂.",
                 image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/P1013127.jpg.webp?itok=Usjd2Ji1",
                 link: "https://www.biosphere2.org/research/research-initiatives/tropical-rain-forest",
                 color: "#4caf50",
@@ -325,7 +328,7 @@
             },
             savannah: {
                 title: "HYDROLOGICAL SAVANNAH",
-                blurb: "A hydrological transition zone balancing atmospheric chemistry between the desert and rainforest.",
+                blurb: "Designed as a hydrological transition zone, the Tropical Savannah balances atmospheric chemistry between the Rainforest and Desert. It features a distinct slope to study surface runoff and how semi-arid vegetation controls soil erosion.",
                 image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/P1014166.jpg.webp?itok=R_Mn7Q3o",
                 link: "https://www.biosphere2.org/research/research-initiatives",
                 color: "#ffca28",
@@ -338,7 +341,7 @@
             },
             desert: {
                 title: "COASTAL FOG DESERT",
-                blurb: "Simulating the arid Baja California peninsula. Research focuses on plant physiology under elevated CO₂ conditions.",
+                blurb: "Modeled after the Vizcaino Desert in Baja California, this biome simulates a coastal fog desert with distinct winter-rainfall climate. Scientists study plant physiology here to see how arid ecosystems respond to elevated atmospheric CO₂.",
                 image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/P1014207.jpg.webp?h=16a8947f&itok=mcMX179_",
                 link: "https://www.biosphere2.org/research/research-initiatives",
                 color: "#e91e63",
@@ -351,7 +354,7 @@
             },
             leo: {
                 title: "LANDSCAPE EVOLUTION (LEO)",
-                blurb: "The world's largest indoor Earth science experiment tracking how water, energy, and carbon move through landscapes.",
+                blurb: "The world's largest laboratory experiment in interdisciplinary Earth science. LEO consists of three massive hillslopes that track every drop of water to understand how landscapes evolve and how water, energy, and carbon move through them.",
                 image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/MecklerPhoto-LEO_0597_F.jpg.webp?h=5ba7cdad&itok=jp3zIEof",
                 link: "https://www.biosphere2.org/research/research-initiatives/landscape-evolution-observatory-leo",
                 color: "#ff9800",
@@ -367,7 +370,6 @@
         // --- DATA ENGINE ---
         async function fetchSensorData(id) {
             try {
-                // Fetch through CORS Proxy
                 const encodedUrl = encodeURIComponent(`${TARGET_URL}${id}`);
                 const response = await fetch(`${PROXY_URL}${encodedUrl}`);
                 const text = await response.text();
@@ -387,6 +389,7 @@
                 
                 for(let i=0; i<data.length; i++) {
                     const val = data[i];
+                    // Strict filter to remove artifacts/dropouts
                     if(val !== null && Math.abs(val) > 0.01) {
                         lastVal = val;
                         cleanData.push({ 
@@ -399,12 +402,7 @@
                 }
 
                 const avg = count > 0 ? sum / count : 0;
-                let trendPct = 0;
-                if(avg !== 0 && lastVal !== "--") {
-                    trendPct = ((lastVal - avg) / avg) * 100;
-                }
-
-                return { current: lastVal, history: cleanData, trend: trendPct };
+                return { current: lastVal, history: cleanData, fullAvg: avg };
             } catch (e) {
                 console.error("Fetch failed", e);
                 return null;
@@ -413,7 +411,6 @@
 
         // --- SEAMLESS SWITCHING ---
         async function switchSystem(key, btnElement) {
-            // Guard clause to prevent reloading if clicking the same active system
             if (key === currentSystem && btnElement.classList.contains('active')) return;
 
             currentSystem = key;
@@ -431,7 +428,7 @@
             overlay.classList.add('active');
 
             document.getElementById('system-title').textContent = sys.title;
-            document.getElementById('system-blurb').innerHTML = sys.blurb;
+            document.getElementById('system-blurb').textContent = sys.blurb;
             document.getElementById('system-link').href = sys.link;
             panel.style.setProperty('--system-color', sys.color);
 
@@ -444,6 +441,9 @@
             const promises = sys.sensors.map(s => fetchSensorData(s.id));
             const results = await Promise.all(promises);
             currentSystemData = results;
+
+            const now = new Date();
+            document.getElementById('last-update').textContent = "UPDATED: " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
             renderBubbles();
             updateChart();
@@ -463,11 +463,33 @@
                 const value = data && data.current !== "--" ? data.current.toFixed(1) : "--";
                 
                 let trendHtml = '';
-                if (data && data.current !== "--") {
-                    const t = data.trend;
+                if (data && data.history && data.history.length > 0) {
+                    // Trend Context Calculation
+                    const now = new Date().getTime();
+                    const cutoff = timeRange === '24h' 
+                        ? now - (24 * 60 * 60 * 1000) 
+                        : now - (7 * 24 * 60 * 60 * 1000);
+                    
+                    const visibleData = data.history.filter(pt => pt.x > cutoff);
+                    let sum = 0; 
+                    visibleData.forEach(pt => sum += pt.y);
+                    const avg = visibleData.length ? sum / visibleData.length : data.fullAvg;
+
+                    let t = 0;
+                    if (avg !== 0 && data.current !== "--") {
+                        t = ((data.current - avg) / avg) * 100;
+                    }
+
                     const arrow = t > 0 ? '▲' : (t < 0 ? '▼' : '-');
                     const colorClass = t > 0.1 ? 'trend-up' : (t < -0.1 ? 'trend-down' : 'trend-flat');
-                    trendHtml = `<span class="dp-trend ${colorClass}">${arrow} ${Math.abs(t).toFixed(1)}%</span>`;
+                    const trendLabel = timeRange === '24h' ? 'vs 24h avg' : 'vs 7d avg';
+
+                    trendHtml = `
+                        <div class="trend-container">
+                            <span class="dp-trend ${colorClass}">${arrow} ${Math.abs(t).toFixed(1)}%</span>
+                            <span class="dp-trend-context">${trendLabel}</span>
+                        </div>
+                    `;
                 }
 
                 const div = document.createElement('div');
@@ -488,7 +510,7 @@
         function selectSensor(index) {
             if (index === selectedSensorIndex) return;
             selectedSensorIndex = index;
-            renderBubbles();
+            renderBubbles(); 
             updateChart(); 
         }
 
@@ -496,7 +518,24 @@
             timeRange = range;
             document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            renderBubbles(); // Recalculate trends
             updateChart();
+        }
+
+        // --- SMOOTHING FUNCTION ---
+        function smoothData(data, windowSize) {
+            let smoothed = [];
+            for (let i = 0; i < data.length; i++) {
+                let start = Math.max(0, i - windowSize);
+                let end = i + 1;
+                let subset = data.slice(start, end);
+                let sum = subset.reduce((a, b) => a + b.y, 0);
+                smoothed.push({
+                    x: data[i].x,
+                    y: sum / subset.length
+                });
+            }
+            return smoothed;
         }
 
         function updateChart() {
@@ -511,7 +550,13 @@
                 ? now - (24 * 60 * 60 * 1000) 
                 : now - (7 * 24 * 60 * 60 * 1000);
 
-            const filteredData = sensorData.history.filter(pt => pt.x > cutoff);
+            let filteredData = sensorData.history.filter(pt => pt.x > cutoff);
+
+            // APPLY SMOOTHING FOR 7D VIEW
+            if (timeRange === '7d' && filteredData.length > 20) {
+                // Moving average window of ~10 points to remove high frequency jitter
+                filteredData = smoothData(filteredData, 12);
+            }
 
             const ctx = document.getElementById('systemChart').getContext('2d');
             
@@ -549,7 +594,7 @@
                             titleFont: { family: 'Space Grotesk' },
                             bodyFont: { family: 'JetBrains Mono' },
                             callbacks: {
-                                label: (ctx) => `${ctx.parsed.y} ${sensorConfig.unit}`
+                                label: (ctx) => `${ctx.parsed.y.toFixed(2)} ${sensorConfig.unit}`
                             }
                         }
                     },
@@ -565,14 +610,19 @@
                         },
                         y: {
                             grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#666', font: {size: 10} }
+                            ticks: { color: '#666', font: {size: 10} },
+                            title: {
+                                display: true,
+                                text: `${sensorConfig.label} (${sensorConfig.unit})`,
+                                color: '#888',
+                                font: { size: 10, family: 'Inter', weight: 'bold' }
+                            }
                         }
                     }
                 }
             });
         }
 
-        // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
             switchSystem('ocean', document.querySelector('.sys-btn.active'));
         });
