@@ -283,10 +283,13 @@
     </section>
 
     <script>
-        const BASE_URL = 'https://data.b2.arizona.edu/Bio2Controls/TimeSeries.jsp?tab=';
+        // Use a CORS Proxy to bypass browser security restrictions on GitHub Pages
+        const PROXY_URL = 'https://corsproxy.io/?';
+        const TARGET_URL = 'https://data.b2.arizona.edu/Bio2Controls/TimeSeries.jsp?tab=';
 
         // --- STATE ---
-        let currentSystem = 'ocean';
+        // Changed default from 'ocean' to null so the initial call isn't ignored
+        let currentSystem = null; 
         let currentSystemData = []; 
         let selectedSensorIndex = 0; 
         let timeRange = '24h'; 
@@ -364,8 +367,11 @@
         // --- DATA ENGINE ---
         async function fetchSensorData(id) {
             try {
-                const response = await fetch(`${BASE_URL}${id}`);
+                // Fetch through CORS Proxy
+                const encodedUrl = encodeURIComponent(`${TARGET_URL}${id}`);
+                const response = await fetch(`${PROXY_URL}${encodedUrl}`);
                 const text = await response.text();
+                
                 const match = text.match(/window\.chart1_chartModel\s*=\s*({[\s\S]*?});/);
                 if (!match) return null;
 
@@ -407,6 +413,7 @@
 
         // --- SEAMLESS SWITCHING ---
         async function switchSystem(key, btnElement) {
+            // Guard clause to prevent reloading if clicking the same active system
             if (key === currentSystem && btnElement.classList.contains('active')) return;
 
             currentSystem = key;
@@ -565,6 +572,7 @@
             });
         }
 
+        // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
             switchSystem('ocean', document.querySelector('.sys-btn.active'));
         });
