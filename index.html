@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biosphere 2 | Live Systems</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <style>
+        /* --- CORE STYLING --- */
+        body { font-family: 'Inter', sans-serif; background-color: #0b0d12; color: white; margin: 0; }
+        * { box-sizing: border-box; }
+        
+        a { text-decoration: none; color: inherit; }
+
+        /* --- DASHBOARD SECTION --- */
+        .systems-section { 
+            padding: 60px 20px; 
+            background-color: #0b0d12; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        /* HEADER */
+        .header-group { text-align: center; margin-bottom: 30px; max-width: 800px; }
+        
+        .section-heading { 
+            font-family: 'Space Grotesk', sans-serif; 
+            margin: 0 0 20px 0; 
+            letter-spacing: 3px; 
+            font-size: 1.8rem;
+            color: #fff;
+        }
+
+        /* CONTROLS */
+        .system-controls { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        .sys-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.6);
+            padding: 8px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .sys-btn:hover, .sys-btn.active { 
+            background: #fff; 
+            color: #000; 
+            border-color: #fff; 
+            box-shadow: 0 0 20px rgba(255,255,255,0.2); 
+        }
+
+        .system-blurb {
+            font-size: 14px;
+            color: #9ca3af;
+            line-height: 1.5;
+            min-height: 42px; /* Reserves space to prevent jumping */
+        }
+
+        /* --- COMPACT DISPLAY CONTAINER --- */
+        .system-display-container {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr; /* Visual gets 60%, Data 40% */
+            width: 100%;
+            max-width: 1100px; /* Constrained width */
+            height: 580px;     /* FIXED HEIGHT for compact look */
+            background: #13161c;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+        }
+
+        /* LEFT: VISUAL */
+        .system-visual { 
+            position: relative; 
+            width: 100%; 
+            height: 100%; 
+            background: #000; 
+            overflow: hidden; 
+        }
+        
+        .system-visual img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            opacity: 1; 
+            transition: opacity 0.4s ease-in-out; 
+        }
+        .system-visual img.fading { opacity: 0.4; }
+
+        /* RIGHT: DATA PANEL */
+        .system-data-panel { 
+            padding: 30px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            position: relative;
+            background: #13161c;
+        }
+
+        /* LOADING OVERLAY */
+        .panel-overlay {
+            position: absolute; inset: 0; 
+            background: rgba(19, 22, 28, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 20;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .panel-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .spinner {
+            width: 30px; height: 30px; 
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #fff; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* PANEL HEADER */
+        .panel-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            padding-bottom: 12px;
+            margin-bottom: 5px;
+        }
+        .panel-header h3 { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 18px; 
+            margin: 0; 
+            color: white; 
+            letter-spacing: 1px; 
+        }
+        
+        /* DATA GRID (BUBBLES) */
+        .data-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            flex-shrink: 0; 
+        }
+        
+        .data-point {
+            background: rgba(255,255,255,0.03);
+            padding: 12px 15px; 
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .data-point:hover { background: rgba(255,255,255,0.07); transform: translateY(-2px); }
+        .data-point.active-card { 
+            background: rgba(255,255,255,0.08); 
+            border-color: var(--system-color, #fff); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .dp-label { display: block; font-size: 9px; color: #888; letter-spacing: 1px; margin-bottom: 4px; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase;}
+        .dp-value { font-size: 18px; color: #fff; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
+        .dp-unit { font-size: 10px; color: #666; margin-left: 2px; }
+
+        .dp-trend {
+            position: absolute; top: 12px; right: 12px;
+            font-size: 9px; font-weight: 600; font-family: 'Inter', sans-serif;
+        }
+        .trend-up { color: #4caf50; }
+        .trend-down { color: #f44336; }
+        .trend-flat { color: #888; }
+
+        /* CHART AREA */
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+        .time-toggle {
+            display: flex; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 2px;
+        }
+        .time-btn {
+            border: none; background: transparent; color: #aaa; padding: 3px 10px;
+            font-size: 9px; font-weight: bold; cursor: pointer; border-radius: 18px;
+            font-family: 'Space Grotesk', sans-serif; transition: 0.2s;
+        }
+        .time-btn.active { background: white; color: black; }
+
+        .chart-wrapper {
+            flex-grow: 1; /* Fills remaining space */
+            position: relative; 
+            width: 100%; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 12px; 
+            padding: 10px;
+            min-height: 0;
+        }
+
+        .btn-primary {
+            display: block; background: white; color: black;
+            padding: 12px; text-align: center; text-decoration: none;
+            font-weight: bold; font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px; letter-spacing: 1px; border-radius: 6px;
+            transition: 0.2s; margin-top: auto; flex-shrink: 0;
+        }
+        .btn-primary:hover { background: #e0e0e0; transform: translateY(-1px); }
+
+        @media(max-width: 900px) {
+            .system-display-container { grid-template-columns: 1fr; height: auto; }
+            .system-visual { height: 250px; }
+            .system-data-panel { height: auto; }
+            .chart-wrapper { min-height: 250px; }
+        }
+    </style>
+</head>
+<body>
+
+    <section id="systems" class="systems-section">
+        
+        <div class="header-group">
+            <h2 class="section-heading">BIOSPHERE 2 LIVE TELEMETRY</h2>
+            <div class="system-controls">
+                <button class="sys-btn active" onclick="switchSystem('ocean', this)">OCEAN</button>
+                <button class="sys-btn" onclick="switchSystem('rainforest', this)">RAINFOREST</button>
+                <button class="sys-btn" onclick="switchSystem('savannah', this)">SAVANNAH</button>
+                <button class="sys-btn" onclick="switchSystem('desert', this)">DESERT</button>
+                <button class="sys-btn" onclick="switchSystem('leo', this)">LEO</button>
+            </div>
+            <p class="system-blurb" id="system-blurb">Loading system data...</p>
+        </div>
+
+        <div class="system-display-container">
+            <!-- Visual -->
+            <div class="system-visual">
+                <img id="system-image" src="" alt="Biome Visual">
+            </div>
+
+            <!-- Data Panel -->
+            <div class="system-data-panel" id="panel-container">
+                
+                <!-- Seamless Transition Overlay -->
+                <div class="panel-overlay" id="loading-overlay">
+                    <div class="spinner"></div>
+                </div>
+
+                <div class="panel-header">
+                    <h3 id="system-title">SYSTEM</h3>
+                </div>
+
+                <!-- 4 Bubble Data Grid -->
+                <div class="data-grid" id="data-grid"></div>
+
+                <!-- Chart Controls -->
+                <div class="chart-header">
+                    <span style="font-size:9px; color:#666; letter-spacing:1px; text-transform: uppercase;">Real-time Trend</span>
+                    <div class="time-toggle">
+                        <button class="time-btn active" onclick="toggleTimeRange('24h', this)">24H</button>
+                        <button class="time-btn" onclick="toggleTimeRange('7d', this)">7D</button>
+                    </div>
+                </div>
+
+                <!-- Live Chart -->
+                <div class="chart-wrapper">
+                    <canvas id="systemChart"></canvas>
+                </div>
+
+                <a href="#" target="_blank" id="system-link" class="btn-primary">ACCESS FULL DATASET</a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const BASE_URL = 'https://data.b2.arizona.edu/Bio2Controls/TimeSeries.jsp?tab=';
+
+        // --- STATE ---
+        let currentSystem = 'ocean';
+        let currentSystemData = []; 
+        let selectedSensorIndex = 0; 
+        let timeRange = '24h'; 
+        let myChart = null;
+
+        // --- CONFIGURATION ---
+        const systems = {
+            ocean: {
+                title: "OCEAN REEF LAB",
+                blurb: "Modeling a Caribbean reef to demonstrate how changes in ocean chemistry significantly affect coral growth and health.",
+                image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2021-10/3_Biomes_Ocean_Photo_Option%203.jpg.webp?itok=Em1QPdlr",
+                link: "https://www.biosphere2.org/research/research-initiatives/ocean-reef-lab",
+                color: "#00e5ff",
+                sensors: [
+                    { id: "463", label: "WATER TEMP", unit: "°C" },
+                    { id: "469", label: "DISSOLVED O2", unit: "mg/L" },
+                    { id: "457", label: "pH LEVEL", unit: "pH" },
+                    { id: "467", label: "SALINITY", unit: "PSU" }
+                ]
+            },
+            rainforest: {
+                title: "TROPICAL RAIN FOREST",
+                blurb: "Spanning lowland to cloud forest, this biome helps scientists study how tropical plants adapt to rising atmospheric CO₂.",
+                image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/P1013127.jpg.webp?itok=Usjd2Ji1",
+                link: "https://www.biosphere2.org/research/research-initiatives/tropical-rain-forest",
+                color: "#4caf50",
+                sensors: [
+                    { id: "562", label: "MTN TEMP", unit: "°F" },
+                    { id: "561", label: "MTN HUMIDITY", unit: "%" },
+                    { id: "567", label: "CO2 (13M)", unit: "ppm" },
+                    { id: "546", label: "POND TEMP", unit: "°F" }
+                ]
+            },
+            savannah: {
+                title: "HYDROLOGICAL SAVANNAH",
+                blurb: "A hydrological transition zone balancing atmospheric chemistry between the desert and rainforest.",
+                image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/P1014166.jpg.webp?itok=R_Mn7Q3o",
+                link: "https://www.biosphere2.org/research/research-initiatives",
+                color: "#ffca28",
+                sensors: [
+                    { id: "535", label: "LOWER TEMP", unit: "°F" },
+                    { id: "538", label: "HUMIDITY", unit: "%" },
+                    { id: "543", label: "BASEMENT CO2", unit: "ppm" },
+                    { id: "832", label: "THORN SCRUB TMP", unit: "°F" }
+                ]
+            },
+            desert: {
+                title: "COASTAL FOG DESERT",
+                blurb: "Simulating the arid Baja California peninsula. Research focuses on plant physiology under elevated CO₂ conditions.",
+                image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/P1014207.jpg.webp?h=16a8947f&itok=mcMX179_",
+                link: "https://www.biosphere2.org/research/research-initiatives",
+                color: "#e91e63",
+                sensors: [
+                    { id: "1157", label: "AIR TEMP (RA)", unit: "°F" },
+                    { id: "1158", label: "HUMIDITY", unit: "%" },
+                    { id: "1164", label: "AIR FLOW", unit: "" },
+                    { id: "1155", label: "SUPPLY TEMP", unit: "°F" }
+                ]
+            },
+            leo: {
+                title: "LANDSCAPE EVOLUTION (LEO)",
+                blurb: "The world's largest indoor Earth science experiment tracking how water, energy, and carbon move through landscapes.",
+                image: "https://biosphere2.org/sites/default/files/styles/az_full_width_bg_large/public/2025-07/MecklerPhoto-LEO_0597_F.jpg.webp?h=5ba7cdad&itok=jp3zIEof",
+                link: "https://www.biosphere2.org/research/research-initiatives/landscape-evolution-observatory-leo",
+                color: "#ff9800",
+                sensors: [
+                    { id: "19362", label: "WEST UP TEMP", unit: "°F" },
+                    { id: "19361", label: "AIRFLOW", unit: "cfm" },
+                    { id: "616", label: "BASE CO2", unit: "ppm" },
+                    { id: "578", label: "WEST UP HUM", unit: "%" }
+                ]
+            }
+        };
+
+        // --- DATA ENGINE ---
+        async function fetchSensorData(id) {
+            try {
+                const response = await fetch(`${BASE_URL}${id}`);
+                const text = await response.text();
+                const match = text.match(/window\.chart1_chartModel\s*=\s*({[\s\S]*?});/);
+                if (!match) return null;
+
+                const raw = JSON.parse(match[1]);
+                const data = raw.layers[0].dataSets[0].data;
+                const times = raw.layers[0].xValues;
+                const offset = 62135596800; // 1AD to 1970
+
+                let lastVal = "--";
+                let cleanData = [];
+                let sum = 0;
+                let count = 0;
+                
+                for(let i=0; i<data.length; i++) {
+                    const val = data[i];
+                    if(val !== null && Math.abs(val) > 0.01) {
+                        lastVal = val;
+                        cleanData.push({ 
+                            x: (times[i] - offset) * 1000, 
+                            y: val 
+                        });
+                        sum += val;
+                        count++;
+                    }
+                }
+
+                const avg = count > 0 ? sum / count : 0;
+                let trendPct = 0;
+                if(avg !== 0 && lastVal !== "--") {
+                    trendPct = ((lastVal - avg) / avg) * 100;
+                }
+
+                return { current: lastVal, history: cleanData, trend: trendPct };
+            } catch (e) {
+                console.error("Fetch failed", e);
+                return null;
+            }
+        }
+
+        // --- SEAMLESS SWITCHING ---
+        async function switchSystem(key, btnElement) {
+            if (key === currentSystem && btnElement.classList.contains('active')) return;
+
+            currentSystem = key;
+            selectedSensorIndex = 0;
+            
+            document.querySelectorAll('.sys-btn').forEach(b => b.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            else document.querySelector(`button[onclick*='${key}']`).classList.add('active');
+
+            const sys = systems[key];
+            const overlay = document.getElementById('loading-overlay');
+            const panel = document.getElementById('panel-container');
+            const imgElement = document.getElementById('system-image');
+
+            overlay.classList.add('active');
+
+            document.getElementById('system-title').textContent = sys.title;
+            document.getElementById('system-blurb').innerHTML = sys.blurb;
+            document.getElementById('system-link').href = sys.link;
+            panel.style.setProperty('--system-color', sys.color);
+
+            imgElement.classList.add('fading');
+            setTimeout(() => {
+                imgElement.src = sys.image;
+                imgElement.onload = () => imgElement.classList.remove('fading');
+            }, 200);
+
+            const promises = sys.sensors.map(s => fetchSensorData(s.id));
+            const results = await Promise.all(promises);
+            currentSystemData = results;
+
+            renderBubbles();
+            updateChart();
+
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 300);
+        }
+
+        function renderBubbles() {
+            const sys = systems[currentSystem];
+            const grid = document.getElementById('data-grid');
+            grid.innerHTML = '';
+
+            sys.sensors.forEach((config, index) => {
+                const data = currentSystemData[index];
+                const value = data && data.current !== "--" ? data.current.toFixed(1) : "--";
+                
+                let trendHtml = '';
+                if (data && data.current !== "--") {
+                    const t = data.trend;
+                    const arrow = t > 0 ? '▲' : (t < 0 ? '▼' : '-');
+                    const colorClass = t > 0.1 ? 'trend-up' : (t < -0.1 ? 'trend-down' : 'trend-flat');
+                    trendHtml = `<span class="dp-trend ${colorClass}">${arrow} ${Math.abs(t).toFixed(1)}%</span>`;
+                }
+
+                const div = document.createElement('div');
+                div.className = `data-point ${index === selectedSensorIndex ? 'active-card' : ''}`;
+                div.onclick = () => selectSensor(index);
+                
+                div.innerHTML = `
+                    <span class="dp-label">${config.label}</span>
+                    <span class="dp-value" style="color:${index === selectedSensorIndex ? sys.color : '#fff'}">
+                        ${value}<span class="dp-unit">${config.unit}</span>
+                    </span>
+                    ${trendHtml}
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function selectSensor(index) {
+            if (index === selectedSensorIndex) return;
+            selectedSensorIndex = index;
+            renderBubbles();
+            updateChart(); 
+        }
+
+        function toggleTimeRange(range, btn) {
+            timeRange = range;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateChart();
+        }
+
+        function updateChart() {
+            const sys = systems[currentSystem];
+            const sensorConfig = sys.sensors[selectedSensorIndex];
+            const sensorData = currentSystemData[selectedSensorIndex];
+
+            if (!sensorData || !sensorData.history) return;
+
+            const now = new Date().getTime();
+            const cutoff = timeRange === '24h' 
+                ? now - (24 * 60 * 60 * 1000) 
+                : now - (7 * 24 * 60 * 60 * 1000);
+
+            const filteredData = sensorData.history.filter(pt => pt.x > cutoff);
+
+            const ctx = document.getElementById('systemChart').getContext('2d');
+            
+            if (myChart) myChart.destroy();
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, sys.color + '66');
+            gradient.addColorStop(1, sys.color + '00');
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: sensorConfig.label,
+                        data: filteredData,
+                        borderColor: sys.color,
+                        borderWidth: 2,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.3,     
+                        pointRadius: 0,   
+                        pointHitRadius: 10,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            titleFont: { family: 'Space Grotesk' },
+                            bodyFont: { family: 'JetBrains Mono' },
+                            callbacks: {
+                                label: (ctx) => `${ctx.parsed.y} ${sensorConfig.unit}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { 
+                                unit: timeRange === '24h' ? 'hour' : 'day',
+                                displayFormats: { hour: 'HH:mm', day: 'MMM d' } 
+                            },
+                            grid: { display: false },
+                            ticks: { color: '#666', maxTicksLimit: 6, font: {size: 10} }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#666', font: {size: 10} }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            switchSystem('ocean', document.querySelector('.sys-btn.active'));
+        });
+
+    </script>
+</body>
+</html>
