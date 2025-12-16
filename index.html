@@ -280,7 +280,7 @@
     <section id="systems" class="systems-section">
         
         <div class="header-group">
-            <h2 class="section-heading">BIOSPHERE 2 LIVE TELEMETRY</h2>
+            <h2 class="section-heading">BIOSPHERE 2 LIVE DATA</h2>
             <div class="system-controls">
                 <button class="sys-btn active" onclick="switchSystem('ocean', this)">OCEAN</button>
                 <button class="sys-btn" onclick="switchSystem('rainforest', this)">RAINFOREST</button>
@@ -429,6 +429,10 @@
                 const data = raw.layers[0].dataSets[0].data;
                 const times = raw.layers[0].xValues;
                 const offset = 62135596800; // 1AD to 1970
+                
+                // Get local browser timezone offset in milliseconds
+                // (e.g., UTC-6 returns 360mins, which we add to compensate for browser subtraction)
+                const timezoneCorrection = new Date().getTimezoneOffset() * 60 * 1000;
 
                 let lastVal = "--";
                 let cleanData = [];
@@ -441,7 +445,8 @@
                     if(val !== null && Math.abs(val) > 0.01) {
                         lastVal = val;
                         cleanData.push({ 
-                            x: (times[i] - offset) * 1000, 
+                            // Add timezoneCorrection so the chart displays "Source Face Value" time
+                            x: ((times[i] - offset) * 1000) + timezoneCorrection, 
                             y: val 
                         });
                         sum += val;
