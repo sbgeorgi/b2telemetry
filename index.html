@@ -512,10 +512,12 @@
                 
                 let trendHtml = '';
                 if (data && data.history && data.history.length > 0) {
-                    const now = new Date().getTime();
+                    // FIX: Use the last data point as "Now" to ensure timezone compatibility
+                    const lastDataPointTime = data.history[data.history.length - 1].x;
+                    
                     const cutoff = timeRange === '24h' 
-                        ? now - (24 * 60 * 60 * 1000) 
-                        : now - (7 * 24 * 60 * 60 * 1000);
+                        ? lastDataPointTime - (24 * 60 * 60 * 1000) 
+                        : lastDataPointTime - (7 * 24 * 60 * 60 * 1000);
                     
                     const visibleData = data.history.filter(pt => pt.x > cutoff);
                     let sum = 0; 
@@ -590,12 +592,15 @@
             const sensorConfig = sys.sensors[selectedSensorIndex];
             const sensorData = currentSystemData[selectedSensorIndex];
 
-            if (!sensorData || !sensorData.history) return;
+            if (!sensorData || !sensorData.history || sensorData.history.length === 0) return;
 
-            const now = new Date().getTime();
+            // FIX: Anchor the time window to the LATEST DATA POINT, not the browser's clock.
+            // This fixes the empty graph issue caused by Server/Client timezone drift.
+            const latestTime = sensorData.history[sensorData.history.length - 1].x;
+
             const cutoff = timeRange === '24h' 
-                ? now - (24 * 60 * 60 * 1000) 
-                : now - (7 * 24 * 60 * 60 * 1000);
+                ? latestTime - (24 * 60 * 60 * 1000) 
+                : latestTime - (7 * 24 * 60 * 60 * 1000);
 
             let filteredData = sensorData.history.filter(pt => pt.x > cutoff);
 
